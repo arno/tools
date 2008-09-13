@@ -8,7 +8,7 @@
 
 GIT_DL=$HOME/download/git
 GIT_HTMLDOCS=$HOME/Documents/git-htmldocs
-GIT_WWW=http://kernel.org/pub/software/scm/git/
+GIT_WWW=http://www.eu.kernel.org/pub/software/scm/git/
 
 tmpdir=$(mktemp -t -d install-git-XXXXXXXXXX)
 
