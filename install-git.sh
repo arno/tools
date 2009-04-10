@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Arnaud Guignard - 2008
+# Arnaud Guignard - 2008-2009
 #
 # usage: install-git.sh GIT_VERSION
 #
@@ -10,17 +10,35 @@ GIT_DL=$HOME/download/git
 GIT_HTMLDOCS=$HOME/Documents/git-htmldocs
 GIT_WWW=http://www.eu.kernel.org/pub/software/scm/git/
 
-tmpdir=$(mktemp -t -d install-git-XXXXXXXXXX)
-
 die() {
     echo >&2 "$@"
     [ -d $tmpdir ] && (rm -rf $tmpdir >/dev/null 2>&1 || sudo rm -rf $tmpdir)
     exit 1
 }
 
-[ $# -ne 1 ] && die "usage: $(basename $0) GIT_VERSION"
+usage() {
+    die "usage: $(basename $1) [-d] [-n] GIT_VERSION
+
+  -d    download only
+  -n    do not verify signatures"
+}
+
+download_only=
+verify_signature=1
+
+### 0. parse command line arguments
+while getopts ":dn" opt; do
+    case $opt in
+        d) download_only=1 ;;
+        n) verify_signature= ;;
+        \?) usage $0 ;;
+    esac
+done
+
+shift $((OPTIND - 1))
 
 version=$1
+[ -z $version ] && usage $0
 
 [ -d $GIT_DL ] || mkdir -p $GIT_DL
 
@@ -34,12 +52,17 @@ for t in git git-manpages git-htmldocs; do
         echo "[+] downloading $fn.sign"
         curl -s -S -o $f.sign $GIT_WWW/$fn.sign || die
     fi
-    gpg --verify $f.sign $f >/dev/null 2>&1 || die "[-] bad signature for $fn"
-    echo "[+] good signature for $fn"
+    if [ -n "$verify_signature" ]; then
+        gpg --verify $f.sign $f >/dev/null 2>&1 || die "[-] bad signature for $fn"
+        echo "[+] good signature for $fn"
+    fi
 done
+
+[ -n "$download_only" ] && exit 0
 
 ### 2. make git
 echo "[+] building git..."
+tmpdir=$(mktemp -t -d install-git-XXXXXXXXXX)
 tar -C $tmpdir -xjf $GIT_DL/git-$version.tar.bz2
 cd $tmpdir/git-$version
 make prefix=/usr/local all >/dev/null 2>&1 || die "[-] error compiling git"
