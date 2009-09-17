@@ -99,6 +99,6 @@ fi
 echo "[+] stowing git $version"
 sudo stow git-$version >/dev/null || die "[-] error stowing git"
 
-rm -rf $tempdir
+rm -rf $tmpdir
 
 # vim:et:sw=4:ts=4:
