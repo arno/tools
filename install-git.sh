@@ -77,9 +77,8 @@ sudo DESTDIR=$destdir make prefix=/usr/local install >/dev/null || \
 find $destdir -name "perllocal.pod" | sudo xargs rm -f 
 
 ## 3.2 man pages
-sudo mkdir $destdir/usr/local/man
-sudo tar -C $destdir/usr/local/man -xjf $GIT_DL/git-manpages-$version.tar.bz2
-sudo chown -R root:root $destdir/usr/local/man
+sudo tar -C $destdir/usr/local/share/man -xjf $GIT_DL/git-manpages-$version.tar.bz2
+sudo chown -R root:root $destdir/usr/local/share/man
 
 ## 3.3 move to stow dir
 sudo mv $destdir/usr/local /usr/local/stow/git-$version
