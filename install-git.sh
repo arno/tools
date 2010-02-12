@@ -4,11 +4,14 @@
 #
 # usage: install-git.sh GIT_VERSION
 #
-# dependencies: curl gpg stow sudo
+# dependencies: curl gpg stow sudo [xmlstarlet]
 
 GIT_DL=$HOME/download/git
 GIT_HTMLDOCS=$HOME/Documents/git-htmldocs
 GIT_WWW=http://www.eu.kernel.org/pub/software/scm/git/
+
+XMLSTARLET=$(which xmlstarlet)
+[ -z "$XMLSTARLET" ] && XMLSTARLET=$(which xml)
 
 die() {
     echo >&2 "$@"
@@ -20,7 +23,10 @@ usage() {
     die "usage: $(basename $1) [-d] [-n] GIT_VERSION
 
   -d    download only
-  -n    do not verify signatures"
+  -n    do not verify signatures
+
+If xmlstarlet [http://xmlstar.sourceforge.net/] is installed GIT_VERSION can be
+omitted and the current git will be downloaded."
 }
 
 download_only=
@@ -38,6 +44,12 @@ done
 shift $((OPTIND - 1))
 
 version=$1
+if [ -z "$version" ] && [ -n "$XMLSTARLET" ]; then
+    version=$(curl -s -S -L http://git-scm.com/ | \
+              xmlstarlet sel --html -T -t -m "//*[@id='ver']" -v '.' | \
+              cut -b2-)
+fi
+
 [ -z $version ] && usage $0
 
 [ -d $GIT_DL ] || mkdir -p $GIT_DL
