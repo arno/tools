@@ -24,7 +24,7 @@ def main(all_dirs):
                 if eyeD3.isMp3File(fp):
                     t.link(fp, eyeD3.ID3_V2)
                     t.frames.removeFramesByID('TPE2')
-                    t.frames.removeFramesByID('TPE2')
+                    t.frames.removeFramesByID('TDAT')
                     t.frames.removeFramesByID('TPUB')
                     t.update(eyeD3.ID3_V2_3)
                 else:
