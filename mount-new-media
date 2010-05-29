@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+import traceback
+
+import gobject
+
+import dbus
+import dbus.mainloop.glib
+
+import pygtk
+pygtk.require('2.0')
+import pynotify
+
+def device_added_handler(device_path):
+    device = dbus.SystemBus().get_object("org.freedesktop.UDisks", device_path)
+    props = dbus.Interface(device, "org.freedesktop.DBus.Properties")
+    dev_name = props.Get("org.freedesktop.UDisks.Device", "DeviceFile")
+    logging.info("New device added: %s" % dev_name)
+    if props.Get("org.freedesktop.UDisks.Device", "DeviceIsPartition"):
+        try:
+            iface = dbus.Interface(device, "org.freedesktop.UDisks.Device")
+            mount_path = iface.FilesystemMount('', [])
+            msg = "%s mounted on %s" % (dev_name, mount_path)
+            logging.info(msg)
+            n = pynotify.Notification("New media mounted", msg, "drive-harddisk")
+            if not n.show():
+                logging.error("failed to send notification")
+        except dbus.DBusException, e:
+            logging.exception(e)
+
+def main():
+    logging.basicConfig(level=logging.DEBUG,
+                        format="%(asctime)-15s - %(levelname)s - %(message)s")
+    if not pynotify.init(os.path.basename(sys.argv[0])):
+        logging.error("Cannot initialize python-notify")
+        sys.exit(1)
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    dbus.SystemBus().add_signal_receiver(device_added_handler,
+                                         signal_name="DeviceAdded",
+                                         dbus_interface="org.freedesktop.UDisks")
+
+    try:
+        loop = gobject.MainLoop()
+        loop.run()
+    except KeyboardInterrupt:
+        pass
+
+if __name__ == "__main__":
+    main()
+
