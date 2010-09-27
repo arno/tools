@@ -12,6 +12,7 @@ GIT_WWW=http://www.eu.kernel.org/pub/software/scm/git/
 
 die() {
     echo >&2 "$@"
+    [ -n "$logfile" -a -f $logfile ] && echo "see $logfile for details"
     [ -d $tmpdir ] && (rm -rf $tmpdir >/dev/null 2>&1 || sudo rm -rf $tmpdir)
     exit 1
 }
@@ -67,17 +68,20 @@ done
 
 ### 2. make git
 echo "[+] building git..."
-tmpdir=$(mktemp -t -d install-git-XXXXXXXXXX)
+tmpdir=$(mktemp -d /tmp/install-git-XXXXXXXXXX ||
+    die "error creating temporary directory")
+logfile=$(mktemp /tmp/log.install-git.XXXXXXXXXX ||
+    die "error creating temporary log file")
 tar -C $tmpdir -xjf $GIT_DL/git-$version.tar.bz2
 cd $tmpdir/git-$version
-make prefix=/usr/local all >/dev/null 2>&1 || die "[-] error compiling git"
+make prefix=/usr/local all >$logfile 2>&1 || die "[-] error compiling git"
 
 ### 3. install git
 
 ## 3.1 in a temp dir
 echo "[+] installing git..."
 destdir=$tmpdir/gitstow
-sudo DESTDIR=$destdir make prefix=/usr/local install >/dev/null || \
+sudo DESTDIR=$destdir make prefix=/usr/local install >$logfile || \
     die "[-] error installing git"
 find $destdir -name "perllocal.pod" | sudo xargs rm -f 
 
@@ -95,7 +99,7 @@ if [ -e /usr/local/bin/git ]; then
     [ -L /usr/local/bin/git ] || die "[-] git is not installed with stow"
     prev_git=$(readlink /usr/local/bin/git | cut -d '/' -f 3)
     echo "[+] unstowing $prev_git"
-    sudo stow -D $prev_git >/dev/null || \
+    sudo stow -D $prev_git >$logfile || \
         die "[-] error unstowing previous git version"
 fi
 
@@ -103,6 +107,7 @@ fi
 echo "[+] stowing git $version"
 sudo stow git-$version >/dev/null || die "[-] error stowing git"
 
+rm -f $logfile
 rm -rf $tmpdir
 
 # vim:et:sw=4:ts=4:
